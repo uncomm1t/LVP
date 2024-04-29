@@ -4,7 +4,9 @@
 //
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 class Move {
@@ -24,6 +26,50 @@ class Move {
     public String toString() {
         return "(" + row + ", " + number + ")";
     }
+}
+
+class MoveSim {
+
+    private Move move;
+    private int wins;
+    private int losses;
+    private int result;
+
+    public MoveSim(Move move) {
+        this.move = move;
+        this.wins = 0;
+        this.losses = 0;
+        this.result = 0;
+    }
+
+    public int calcWin() {
+        return result = wins - losses;
+    }
+
+    public Move getMove() {
+        return move;
+    }
+
+    public void inkrementWins() {
+        wins++;
+    }
+
+    public void inkrementLosses() {
+        losses++;
+    }
+
+    public int getWins() {
+        return wins;
+    }
+
+    public int getLosses() {
+        return losses;
+    }
+
+    public int getResult() {
+        return result;
+    }
+
 }
 
 interface NimGame {
@@ -46,50 +92,12 @@ interface NimGame {
     String toString();
 }
 
-
- class MoveSim {
-
-    private Move platzhalter;
-    private int  wins;
-    private int  losses;
-
-    public  MoveSim(Move move, int wins, int losses) {
-        this.platzhalter = platzhalter;
-        this.wins = wins;
-        this.losses = losses;
-    }
-    
-    public void possibleMoves(Nim nim){
-        ArrayList<Move> moves = new ArrayList<>();
-        for (int row = 0; row < nim.rows.length; row++) {
-            for (int number = 1; number <= nim.rows[row]; number++) {
-                moves.add(Move.of(row, number));
-            }
-        }
-
-        ArrayList<MoveSim> MoveScoreList = new ArrayList<>();
-        for (Move move : moves) {
-            MoveScoreList.add(new MoveSim(move,0,0));
-        }
-
-        int simLength = 20;
-        for (int i = 0; i < simLength; i++) {
-            for (MoveSim moveSim : MoveScoreList) {
-                nim
-            }
-        }
-    } 
-
-
-
-}
-
 class Nim implements NimGame {
     private Random r = new Random();
     int[] rows;
 
     public static Nim of(int... rows) {
-    
+
         return new Nim(rows);
     }
 
@@ -173,97 +181,187 @@ class Nim implements NimGame {
         return result;
     }
 
-
-}
-
-
-/* 
-Nim nim = Nim.of(2,3,4);assert nim!=nim.play(Move.of(1,2)):"Return a new Nim instance";
-
-    int[] randomSetup(int... maxN) {
-        Random r = new Random();
-        int[] rows = new int[maxN.length];
-        for (int i = 0; i < maxN.length; i++) {
-            rows[i] = r.nextInt(maxN[i]) + 1;
-        }
-        return rows;
-    }
-
-    ArrayList<Move> autoplay(NimGame nim) {
+    public ArrayList possibleMoves() {
         ArrayList<Move> moves = new ArrayList<>();
-        while (!nim.isGameOver()) {
-            Move m = nim.bestMove();
-            moves.add(m);
-            nim = nim.play(m);
+        for (int i = 0; i < rows.length; i++) {
+            for (int j = 1; j <= rows[i]; j++) {
+                moves.add(Move.of(i, j));
+            }
         }
         return moves;
     }
 
-boolean simulateGame(int... maxN) {
-    Nim nim = Nim.of(randomSetup(maxN));
-    // System.out.println(nim);
-    // System.out.println((NimGame.isWinning(nim.rows) ? "first" : "second") + " to win"); 
-    ArrayList<Move> moves = autoplay(nim);
-    // System.out.println(moves);
-    return (NimGame.isWinning(nim.rows) && (moves.size() % 2) == 1) ||
-           (!NimGame.isWinning(nim.rows) && (moves.size() % 2) == 0); 
+    public Move mcMove() {
+        ArrayList<Move> moves = new ArrayList<>();
+        for (int i = 0; i < rows.length; i++) {
+            for (int j = 1; j <= rows[i]; j++) {
+                moves.add(Move.of(i, j));
+            }
+        }
+        ArrayList<MoveSim> bestMoves = new ArrayList<>();
+        for (Move move : moves) {
+            bestMoves.add(new MoveSim(move));
+        }
+
+        int simLength = 100;
+        for (int i = 0; i < simLength; i++) {
+            for (MoveSim simulation : bestMoves) {
+                Nim copyNim = new Nim(this.rows);
+                // copyNim = copyNim.play(simulation.getMove());
+                while (!copyNim.isGameOver()) {
+                    copyNim = copyNim.play(copyNim.randomMove());
+                }
+                if (NimGame.isWinning(copyNim.rows)) {
+                    simulation.inkrementWins();
+                } else {
+                    simulation.inkrementLosses();
+                }
+            }
+        }
+
+        
+        bestMoves.sort((a, b) -> b.calcWin() - a.calcWin());
+
+        int highestWinValue = bestMoves.get(0).calcWin();
+        List<MoveSim> highestWinMoves = bestMoves.stream()
+                .filter(move -> move.calcWin() == highestWinValue)
+                .collect(Collectors.toList());
+
+        if (highestWinMoves.size() > 1) {
+            Random r = new Random();
+            MoveSim randomBestMove = highestWinMoves.get(r.nextInt(highestWinMoves.size()));
+            return randomBestMove.getMove();
+        }
+        return bestMoves.get(0).getMove();
+    }
+
+    public String evaluateMcMove() {
+        int wins = 0;
+        String result = "";
+        // min 5 mal spielen
+        for (int i = 0; i < 5; i++) {
+            //100 durchläufe
+            for (int j = 0; j < 100; j++) {
+                Nim randomNim = randomSetup();
+                randomNim.toString();
+                while (!randomNim.isGameOver()) {
+                    randomNim = randomNim.play(randomNim.mcMove());
+                }
+                if (NimGame.isWinning(randomNim.rows)) {
+                    wins++;
+                }
+            }
+            
+        }
+            double totalWinRate = (double) wins / (5 * 100) * 100;
+            return totalWinRate + "%\n";
+    }
+
+    public Nim randomSetup() {
+        Random r = new Random();
+        int numRows = r.nextInt(5) + 1;
+        int totalSticks;
+        do {
+            rows = new int[numRows];
+            totalSticks = 0;
+            for (int i = 0; i < rows.length; i++) {
+                rows[i] = r.nextInt(6) + 2; 
+                totalSticks += rows[i];
+            }
+        } while (totalSticks < 5);
+        return Nim.of(rows);
+    }
 }
-
-assert IntStream.range(0,100).allMatch(i->
-
-simulateGame(3,4,5));
-assert IntStream.range(0,100).allMatch(i -> simulateGame(3,4,6,8));
-*/
-/* // Beispielhaftes Spiel über JShell
-
-jshell> Nim n = Nim.of(2,3,4)
-n ==>
-I I
-I I I
-I I I I
-
-jshell> n = n.play(n.bestMove())
-n ==>
-I I
-I I I
-I
-
-jshell> n = n.play(Move.of(2,1))
-n ==>
-I I
-I I I
-
-
-jshell> n = n.play(n.bestMove())
-n ==>
-I I
-I I
-
-
-jshell> n = n.play(Move.of(1,1))
-n ==>
-I I
-I
-
-
-jshell> n = n.play(n.bestMove())
-n ==>
-I
-I
-
-
-jshell> n = n.play(Move.of(1,1))
-n ==>
-I
-
-
-
-jshell> n = n.play(n.bestMove())
-n ==>
-
-
-
-
-jshell> n.isGameOver()
-$25 ==> true
-*/
+/*
+ * Nim nim = Nim.of(2,3,4);assert
+ * nim!=nim.play(Move.of(1,2)):"Return a new Nim instance";
+ * 
+ * int[] randomSetup(int... maxN) {
+ * Random r = new Random();
+ * int[] rows = new int[maxN.length];
+ * for (int i = 0; i < maxN.length; i++) {
+ * rows[i] = r.nextInt(maxN[i]) + 1;
+ * }
+ * return rows;
+ * }
+ * 
+ * ArrayList<Move> autoplay(NimGame nim) {
+ * ArrayList<Move> moves = new ArrayList<>();
+ * while (!nim.isGameOver()) {
+ * Move m = nim.bestMove();
+ * moves.add(m);
+ * nim = nim.play(m);
+ * }
+ * return moves;
+ * }
+ * 
+ * boolean simulateGame(int... maxN) {
+ * Nim nim = Nim.of(randomSetup(maxN));
+ * // System.out.println(nim);
+ * // System.out.println((NimGame.isWinning(nim.rows) ? "first" : "second") +
+ * " to win");
+ * ArrayList<Move> moves = autoplay(nim);
+ * // System.out.println(moves);
+ * return (NimGame.isWinning(nim.rows) && (moves.size() % 2) == 1) ||
+ * (!NimGame.isWinning(nim.rows) && (moves.size() % 2) == 0);
+ * }
+ * 
+ * assert IntStream.range(0,100).allMatch(i->
+ * 
+ * simulateGame(3,4,5));
+ * assert IntStream.range(0,100).allMatch(i -> simulateGame(3,4,6,8));
+ */
+/*
+ * // Beispielhaftes Spiel über JShell
+ * 
+ * jshell> Nim n = Nim.of(2,3,4)
+ * n ==>
+ * I I
+ * I I I
+ * I I I I
+ * 
+ * jshell> n = n.play(n.bestMove())
+ * n ==>
+ * I I
+ * I I I
+ * I
+ * 
+ * jshell> n = n.play(Move.of(2,1))
+ * n ==>
+ * I I
+ * I I I
+ * 
+ * 
+ * jshell> n = n.play(n.bestMove())
+ * n ==>
+ * I I
+ * I I
+ * 
+ * 
+ * jshell> n = n.play(Move.of(1,1))
+ * n ==>
+ * I I
+ * I
+ * 
+ * 
+ * jshell> n = n.play(n.bestMove())
+ * n ==>
+ * I
+ * I
+ * 
+ * 
+ * jshell> n = n.play(Move.of(1,1))
+ * n ==>
+ * I
+ * 
+ * 
+ * 
+ * jshell> n = n.play(n.bestMove())
+ * n ==>
+ * 
+ * 
+ * 
+ * 
+ * jshell> n.isGameOver()
+ * $25 ==> true
+ */
