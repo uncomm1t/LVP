@@ -236,6 +236,7 @@ class Nim implements NimGame {
     }
 
     public String evaluateMcMove() {
+        //Ich habe jetzt viele Sachen versucht aber irgendwie kriege ich immer 0% als Ergebnis
         int wins = 0;
         String result = "";
         // min 5 mal spielen
